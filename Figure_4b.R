@@ -1,6 +1,8 @@
 library(tidyverse)
 library(latex2exp)
 library(ggpubr)
+library(scales)
+
 ### plot type 1 error
 input_dir  <- "~/Desktop/dissertation/gflasso_project/GFLassoInference-experiment/input/"
 plot_output_dir <- '~/Desktop/dissertation/gflasso_project/GFLassoInference-experiment/plot_output/'

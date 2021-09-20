@@ -13,6 +13,16 @@ set.seed(random_seed)
 delta_seq <- seq(0.5,5,by=0.5)
 sigma <- 1
 
+
+estimate_sigma <- function(y, cc_y){
+  s <- split(y, cc_y)
+  s_mean <- sapply(s,mean)
+  rss <- sum((unlist(sapply(seq_along(s), function(i) s[[i]]-s_mean[[i]])))^2)
+  s_sigma <- sqrt(rss/(length(y)-length(s)))
+  return(s_sigma)
+}
+
+
 for (delta in delta_seq){
   # simulation times
   p_val_result <- vector('list',length = sim_target_times)
@@ -52,13 +62,15 @@ for (delta in delta_seq){
     contrast[CC_to_test[[1]]] = 1/(length(CC_to_test[[1]]))
     contrast[CC_to_test[[2]]] = -1/(length(CC_to_test[[2]]))
     mu_diff <- (sum(contrast*beta))
+    # estimate sigma
+    sigma_hat <- estimate_sigma(y_vec,resulting_cc)
     # compute p-values
     p_val_segment_cc <- GFLassoInference::fusedlasso_inf(y=y,
                                                          D=Dmat,
                                                          c1=cc_order[index_i], 
                                                          c2=cc_order[index_i+1],
                                                          method="K",
-                                                         sigma=sigma,
+                                                         sigma=sigma_hat,
                                                          K=K)
     cat("counter", counter_valid, p_val_segment_cc$Union,"\n")
     p_val_segment_cc$mu_diff <- mu_diff 
@@ -68,7 +80,7 @@ for (delta in delta_seq){
   }
   
   save(p_val_result,rand_list,
-       file =paste0(output_dir,'New_Power_1D_GFL_middle_stop_criteria_',stop_criteria,'_grid_',n,
+       file =paste0(output_dir,'estimated_sigma_New_Power_1D_GFL_middle_stop_criteria_',stop_criteria,'_grid_',n,
                     '_level_2_',delta,'_sim_times_',
                     counter_valid,'_random_seed_',random_seed,'.RData'))
   
