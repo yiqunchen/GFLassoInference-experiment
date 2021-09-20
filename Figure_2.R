@@ -10,8 +10,6 @@ library(RColorBrewer)
 input_dir <- "~/Desktop/dissertation/gflasso_project/GFLassoInference-experiment/"
 plot_output_dir <- "~/Desktop/dissertation/gflasso_project/GFLassoInference-experiment/plot_output/"
 
-
-### test the dual path fused and svd functions
 lev1 <- 0 # mean for group 1
 delta <- 3 # mean for group 2; null simulation
 sigma <- 1 # level of noise
@@ -28,8 +26,8 @@ set.seed(2005)
 A.noisy <- A + rnorm(nn^2,mean=0,sd=sigma) # create the noise vector
 y <- c(t(A.noisy))
 
-complete_sol <- genlasso::fusedlasso(y=y,D=Dmat,maxsteps=(K+1))
-beta_hat <- complete_sol$beta[,K+1]
+complete_sol <- genlasso::fusedlasso(y=y,D=Dmat,maxsteps=K)
+beta_hat <- complete_sol$beta[,K]
 resulting_cc <- complete_sol$pathobjs$i
 
 A_plot <- data.frame(expand.grid(c(1:8),c(1:8)), z = y)
@@ -47,14 +45,14 @@ new_y_no_change <- as.numeric(y-(sum(v*y)-phi)*v/sum(v*v))
 phi <- 0
 new_y_less_change <- as.numeric(y-(sum(v*y)-phi)*v/sum(v*v))
 A_less_change <- data.frame(expand.grid(c(1:8),c(1:8)), z = new_y_less_change)
-complete_sol_less_change <- genlasso::fusedlasso(y=new_y_less_change,D=Dmat,maxsteps=(K+1))
+complete_sol_less_change <- genlasso::fusedlasso(y=new_y_less_change,D=Dmat,maxsteps=(K))
 resulting_cc_less_change  <- complete_sol_less_change$pathobjs$i
 
 # more pronounced change
 phi <- -5
 new_y_more_change <- as.numeric(y-(sum(v*y)-phi)*v/sum(v*v))
 A_more_change <- data.frame(expand.grid(c(1:8),c(1:8)), z = new_y_more_change)
-complete_sol_more_change <- genlasso::fusedlasso(y=new_y_more_change,D=Dmat,maxsteps=(K+1))
+complete_sol_more_change <- genlasso::fusedlasso(y=new_y_more_change,D=Dmat,maxsteps=(K))
 resulting_cc_more_change <-  complete_sol_more_change$pathobjs$i
 
 

@@ -163,7 +163,7 @@ dev.off()
 
 
 K <- 13
-complete_sol <- genlasso::fusedlasso(y=y0,D=Dmat,maxsteps=(K+1))
+complete_sol <- genlasso::fusedlasso(y=y0,D=Dmat,maxsteps=(K))
 beta_hat <- complete_sol$beta[,(K+1)]
 
 neg_current_inf_cc <- GFLassoInference::fusedlasso_inf(y=y,
