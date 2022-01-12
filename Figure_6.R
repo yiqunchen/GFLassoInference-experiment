@@ -317,9 +317,8 @@ p_ci_teen <- ggplot(data=result_list_df_ci_plot, aes(x=as.factor(x_plot), y=test
                                             '$p_{\\hat{C}_{1},\\hat{C}_{2}}$-based CI')))) +
   scale_x_discrete(breaks=c(1:10), labels=unname(TeX(tick_labels)))
 
-png(paste0(plot_output_dir,'Figure_5_d.png'),
+png(paste0(plot_output_dir,'Figure_6_d.png'),
     width = 12,height=3,res=200,units='in')
-print(p_ci_drug)
+print(p_ci_teen)
 dev.off()
-
 

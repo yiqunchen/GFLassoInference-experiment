@@ -32,8 +32,8 @@ resulting_cc <- complete_sol$pathobjs$i
 
 A_plot <- data.frame(expand.grid(c(1:8),c(1:8)), z = y)
 
-pos_segment_list <- list(which(resulting_cc==3),
-                         which(resulting_cc==2)) 
+pos_segment_list <- list(which(resulting_cc==2),
+                         which(resulting_cc==3)) 
 pos_contrast_vec <- rep(0, times = length(resulting_cc))
 pos_contrast_vec[pos_segment_list[[1]]] = 1/(length(pos_segment_list[[1]]))
 pos_contrast_vec[pos_segment_list[[2]]] = -1/(length(pos_segment_list[[2]]))

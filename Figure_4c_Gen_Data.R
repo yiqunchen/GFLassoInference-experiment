@@ -1,4 +1,4 @@
-library(PGInference)
+library(GFLassoInference)
 library(igraph)
 library(mclust)
 library(Matrix)
