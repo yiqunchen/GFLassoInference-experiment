@@ -1,4 +1,3 @@
-
 ### load relevant libraries
 library(genlasso)
 library(latex2exp)
@@ -7,6 +6,7 @@ library(lattice)
 library(ggpubr)
 library(RColorBrewer)
 
+# Remember to change your input and output dir!
 input_dir <- "~/Desktop/dissertation/gflasso_project/GFLassoInference-experiment/"
 plot_output_dir <- "~/Desktop/dissertation/gflasso_project/GFLassoInference-experiment/plot_output/"
 
@@ -21,7 +21,6 @@ A[1:(nn/3+1),1:(nn/3+1)] <- 1*delta
 A[(nn-2):(nn),(nn-2):(nn)] <- -1*delta
 beta <- c(t(A))
 K <- 13
-
 set.seed(2005)
 A.noisy <- A + rnorm(nn^2,mean=0,sd=sigma) # create the noise vector
 y <- c(t(A.noisy))
@@ -133,21 +132,23 @@ pos_current_inf_cc <- fusedlasso_inf(y=y,
 
 
 ### Plot the panel (d)
-union_set_1 <- as.vector(pos_current_inf_cc$truncation_set[2])
-union_set_2 <- as.vector(pos_current_inf_cc$truncation_set[3])
-new_x_mid <- c(c(-5,union_set_1[2],union_set_2[1],5)+
-                 c(union_set_1[2],union_set_2[1],5,6))/2
+union_set_1 <- as.vector(pos_current_inf_cc$truncation_set[1])
+union_set_2 <- as.vector(pos_current_inf_cc$truncation_set[2])
+union_set_3 <- as.vector(pos_current_inf_cc$truncation_set[3])
+
+new_x_mid <- c(c(-10,union_set_1[2],union_set_2[1],union_set_2[2],union_set_3[1])+
+                 c(union_set_1[2],union_set_2[1],union_set_2[2],union_set_3[1],70))/2
 
 plot_rec <- data.frame(x=new_x_mid,
-                       y=rep(c(1),each=4),
-                       z=factor(c(1,2,1,1)),
-                       w = c(diff(c(-5,union_set_1[2],union_set_2[1],5)),
-                             5-union_set_2[1]))
+                       y=rep(c(1),each=5),
+                       z=factor(c(1,2,1,2,1)),
+                       w = c(diff(c(-10,union_set_1[2],union_set_2[1],union_set_2[2],union_set_3[1])),
+                             70-union_set_3[1]))
 
 cbPalette <- c( "#56B4E9","#E69F00", "#009E73", "#F0E442",
                 "#0072B2", "#D55E00", "#CC79A7")
 
-phi_values <- ggplot( plot_rec,
+phi_values <- ggplot(plot_rec,
                       aes(xmin = x - w/2 , xmax = x + w/2 , ymin = y, ymax = y + 1)) +
   geom_rect(aes(fill = z), colour = NA)+
   scale_fill_manual(values=cbPalette)+

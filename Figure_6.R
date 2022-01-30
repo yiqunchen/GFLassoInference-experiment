@@ -109,7 +109,7 @@ obs_rate_teen <- ggplot(data = teen_birth_plot) +
 
 png(paste0(plot_output_dir,'Figure_6_a.png'),
     width = 9,height=5,res=300,units='in')
-print(obs_rate)
+print(obs_rate_teen)
 dev.off()
 
 
@@ -296,9 +296,13 @@ all_comb_names <- t(utils::combn(5, 2))
 tick_labels <- (paste0("$\\bar{\\beta}_{",all_comb_names[,1],"}","-",
                        "\\bar{\\beta}_{",all_comb_names[,2],"}$"))
 
-p_ci_teen <- ggplot(data=result_list_df_ci_plot, aes(x=as.factor(x_plot), y=test_stat, colour=type))+
+p_ci_teen <- ggplot(data=result_list_df_ci_plot %>%
+                          mutate(type=factor(type, levels = c("naive","union","hyun"))),
+ aes(x=as.factor(x_plot), y=test_stat, colour=type))+
   geom_point(position = position_dodge(width = 0.5))+
-  geom_pointrange(aes(ymin = lcb, ymax = ucb),position = position_dodge(width = 0.5))+
+  geom_pointrange(aes(ymin = lcb, ymax = ucb),
+    fatten = 0.5, size = 0.7,
+    position = position_dodge(width = 0.5))+
   geom_hline(aes(yintercept = 0))+
   coord_cartesian(ylim=c(-4,4))+
   ylab("")+
@@ -311,10 +315,11 @@ p_ci_teen <- ggplot(data=result_list_df_ci_plot, aes(x=as.factor(x_plot), y=test
         legend.title = element_text(size=15),
         legend.text = element_text(size=15,hjust = 0),
         legend.margin=margin(-10, 0, 0, 0))+
-  scale_color_manual( "Type", values = manual_color_pal,
+  scale_color_manual( " ", values = c("#F8766D","#619CFF", "#00BA38"),
+                      breaks=c("naive","union","hyun"),
                       labels = unname(TeX(c('$p_{Naive}$-based CI',
-                                            '$p_{Hyun}$-based CI',
-                                            '$p_{\\hat{C}_{1},\\hat{C}_{2}}$-based CI')))) +
+                                            '$p_{\\hat{C}_{1},\\hat{C}_{2}}$-based CI',
+                                            '$p_{Hyun}$-based CI' )))) +
   scale_x_discrete(breaks=c(1:10), labels=unname(TeX(tick_labels)))
 
 png(paste0(plot_output_dir,'Figure_6_d.png'),
