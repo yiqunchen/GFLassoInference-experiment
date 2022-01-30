@@ -27,54 +27,57 @@ true_cc <- as.factor(beta)
 # more parameters for running FLasso
 K <- 15
 L <- 3
-sim_target_times <- 500
+sim_target_times <- 1000
 delta_seq <- seq(0.5,5,by=0.5)
-
-for (delta in delta_seq){
-  p_val_result <- vector('list',length = sim_target_times)
-  rand_list <- vector('list',length = sim_target_times)
-  counter_valid <- 0
-  counter <- 0
-  while(counter_valid<sim_target_times){
-    # create the noise vector
-    A.noisy <- A + rnorm(nn^2,mean=0,sd=sigma) 
-    # sample noisy observation
-    y <- c(t(A.noisy))
-    # fused lasso estimator
-    complete_sol <- genlasso::fusedlasso(y=y,D=Dmat,maxsteps=K)
-    resulting_cc <- complete_sol$pathobjs$i
-    # number of estimated CC
-    K_cc <- complete_sol$pathobjs$q
-    if (K_cc>1){
-      #cat("counter_valid", counter_valid,"\n")
-      counter_valid <- counter_valid+1
-      current_adj_rand <- mclust::adjustedRandIndex(resulting_cc,true_cc)
-      # randomly choose a pair to test, and construct contrast
-      contrast <- rep(0, times = length(y))
-      pair_to_test <- sample(c(1:K_cc), replace = F,size = 2)
-      CC_to_test <- list(which(resulting_cc==pair_to_test[1]), 
-                         which(resulting_cc==pair_to_test[2]))
-      contrast[CC_to_test[[1]]] = 1/(length(CC_to_test[[1]]))
-      contrast[CC_to_test[[2]]] = -1/(length(CC_to_test[[2]]))
-      mu_diff <- (sum(contrast*beta))
-      
-      p_val_segment_cc <- GFLassoInference::fusedlasso_inf(y=y,
-                                                           D=Dmat,
-                                                           c1=pair_to_test[1], 
-                                                           c2=pair_to_test[2],
-                                                           method="K",
-                                                           sigma=sigma,
-                                                           K=K)
-      
-      p_val_segment_cc$mu_diff <- mu_diff 
-      p_val_result[[counter_valid]] <- p_val_segment_cc
-      rand_list[[counter_valid]] <- current_adj_rand
+sigma_seq <- c(0.5, 1, 2)
+for (sigma in sigma_seq){
+  for (delta in delta_seq){
+    p_val_result <- vector('list',length = sim_target_times)
+    rand_list <- vector('list',length = sim_target_times)
+    counter_valid <- 0
+    counter <- 0
+    while(counter_valid<sim_target_times){
+      # create the noise vector
+      A.noisy <- A + rnorm(nn^2,mean=0,sd=sigma) 
+      # sample noisy observation
+      y <- c(t(A.noisy))
+      # fused lasso estimator
+      complete_sol <- genlasso::fusedlasso(y=y,D=Dmat,maxsteps=K)
+      resulting_cc <- complete_sol$pathobjs$i
+      # number of estimated CC
+      K_cc <- complete_sol$pathobjs$q
+      if (K_cc>1){
+        #cat("counter_valid", counter_valid,"\n")
+        counter_valid <- counter_valid+1
+        current_adj_rand <- mclust::adjustedRandIndex(resulting_cc,true_cc)
+        # randomly choose a pair to test, and construct contrast
+        contrast <- rep(0, times = length(y))
+        pair_to_test <- sample(c(1:K_cc), replace = F,size = 2)
+        CC_to_test <- list(which(resulting_cc==pair_to_test[1]), 
+                           which(resulting_cc==pair_to_test[2]))
+        contrast[CC_to_test[[1]]] = 1/(length(CC_to_test[[1]]))
+        contrast[CC_to_test[[2]]] = -1/(length(CC_to_test[[2]]))
+        mu_diff <- (sum(contrast*beta))
+        
+        p_val_segment_cc <- GFLassoInference::fusedlasso_inf(y=y,
+                                                             D=Dmat,
+                                                             c1=pair_to_test[1], 
+                                                             c2=pair_to_test[2],
+                                                             method="K",
+                                                             sigma=sigma,
+                                                             K=K)
+        
+        p_val_segment_cc$mu_diff <- mu_diff 
+        p_val_segment_cc$current_adj_rand <- current_adj_rand
+        p_val_result[[counter_valid]] <- p_val_segment_cc
+        rand_list[[counter_valid]] <- current_adj_rand
+      }
     }
   }
 
   save(p_val_result,rand_list,
        file =paste0(output_dir,'New_Power_2D_GFL_stop_criteria_',
-                    stop_criteria,'_grid_',nn,'_level_2_',delta,
+                    stop_criteria,'_grid_',nn,'_level_2_',delta,'_sigma_',sigma,
                     '_sim_times_',counter_valid,'_random_seed_',random_seed,'.RData'))
   
 

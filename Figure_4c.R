@@ -2,6 +2,8 @@ library(tidyverse)
 library(latex2exp)
 library(scales)
 library(intervals)
+
+
 manual_color_pal <- scales::hue_pal()(3)[2:3]
 ### plot power 2D
 input_dir  <- "~/Desktop/dissertation/gflasso_project/GFLassoInference-experiment/input/"
@@ -10,54 +12,79 @@ alpha_thresh <- 0.05
 # load power data
 setwd(input_dir)
 sim_files <- list.files(path = input_dir,
-                        pattern = glob2rx("*2D*500*.*"),full.names = T)
+                        pattern = glob2rx("*2D*stop_criteria_K*500*.*"),full.names = T)
 
 concat_p_value_list <- list()
 concat_rand_list <- c()
+concat_delta_list <- c()
+concat_sigma_list <- c()
+
 
 for (current_file in sim_files){
   load(file=current_file)
+  delta_strsplit <- strsplit(strsplit(current_file,"level_2_")[[1]][2],
+                             "_sim_times")[[1]][1]
+  sigma_strsplit <- strsplit(strsplit(current_file,"sigma_")[[1]][2],
+                             "_random_seed")[[1]][1]
   concat_p_value_list <- c(concat_p_value_list,p_val_result)
   concat_rand_list <- c(concat_rand_list,rand_list)
+  concat_delta_list <- c(concat_delta_list,
+                         rep(as.numeric(delta_strsplit), times = length(rand_list)))
+  concat_sigma_list <- c(concat_sigma_list,
+                         (rep(as.numeric(sigma_strsplit), times = length(rand_list))))
   rm(p_val_result)
 }
 
 concat_rand_list <- unlist(concat_rand_list)
 hyun_p_value <- unlist(lapply(concat_p_value_list, function(x)x[["Hyun"]]))
 union_p_value <- unlist(lapply(concat_p_value_list, function(x)x[["Union"]]))
-effect_size <- abs(unlist(lapply(concat_p_value_list, function(x)x[["mu_diff"]])))
+effect_size <- (unlist(lapply(concat_p_value_list, function(x)x[["mu_diff"]])))
 nu_norm <- unlist(lapply(concat_p_value_list, function(x)x[["sd"]]))
+delta_list <- unlist(concat_delta_list)
+sigma_list <- unlist(concat_sigma_list)
 
 power_new_df <- data.frame(effect_size=effect_size,
                            rand_index = concat_rand_list,
+                           naive_power = as.numeric(naive_p_value),
                            hyun_power = as.numeric(hyun_p_value), 
-                           union_power = as.numeric(union_p_value_rerun)) %>%
-  pivot_longer(-c(rand_index,effect_size), names_to = "p_type", 
-               values_to = "cond_power") %>%
-  mutate(cond_power = cond_power<=alpha_thresh)
+                           union_power = as.numeric(union_p_value),
+                           sigma = sigma_list,
+                           delta = delta_list) %>%
+  pivot_longer(-c(rand_index,effect_size,delta,sigma), names_to = "p_type", 
+               values_to = "p_value") 
 
 power_by_cut <- power_new_df %>%
-  mutate(break_up_mu = cut_interval(effect_size, n=8)) %>%
-  group_by(break_up_mu,p_type) %>%
-  summarise(mean_power = mean(cond_power),
-            sd_power = sqrt(mean(cond_power)*(1-mean(cond_power))/n()))
+  filter(effect_size>1e-5) %>%
+  mutate(break_up_mu = cut_interval(effect_size, n=7,dig.lab=2)) %>%
+  group_by(break_up_mu,p_type,sigma) %>%
+  summarise(mean_power = mean(p_value<=alpha_thresh),
+            sd_power = sqrt(mean_power*(1-mean_power))/n())
+
 
 plot_power <- power_by_cut %>%
-  ggplot(aes(x=break_up_mu,y=mean_power,color=p_type,group=p_type))+ 
-  geom_point()+
-  geom_pointrange(aes(ymin = mean_power+1.96*sd_power, ymax = mean_power-1.96*sd_power))+
+  filter(p_type!="naive_power") %>%
+  ggplot(aes(x=break_up_mu,y=mean_power, 
+             color=p_type,
+             group=interaction(p_type,sigma),
+             linetype=as.factor(sigma)))+ 
+  geom_point(size=2)+
+  geom_pointrange(aes(ymin = mean_power+1.96*sd_power, 
+    ymax = mean_power-1.96*sd_power))+
   geom_line()+
   ylab(TeX('Power at $\\alpha = 0.05$'))+
-  xlab(TeX('$| \\nu^T\\beta | / \\sigma$'))+
+  xlab(TeX('$| \\nu^T\\beta |$'))+
   theme_bw()+
+  scale_linetype_discrete(name=TeX('$\\sigma$'))+
   theme(plot.title = element_text(hjust = 0.5,size=15),
         legend.position="bottom",
         legend.title = element_text(size=15),
-        axis.text = element_text(size=12),
+        axis.text = element_text(size=15),
         axis.text.x = element_text(size=12),
-        legend.text = element_text(size=12,hjust = 0),
+        legend.text = element_text(size=15,hjust = 0),
+        legend.key.size = unit(2.5, "lines"),
         axis.title=element_text(size=15))+
-  scale_color_manual( "Tests", values = c(manual_color_pal[1],manual_color_pal[2]),
+  scale_color_manual( "Tests", 
+                      values = c(manual_color_pal[1],manual_color_pal[2]),
                       labels = unname(TeX(c('$p_{Hyun}$',"$p_{C_{1},C_{2}}$"))))
 
 png(paste0(plot_output_dir,'Figure_4_c.png'),
@@ -65,8 +92,82 @@ png(paste0(plot_output_dir,'Figure_4_c.png'),
 plot_power
 dev.off()
 
+# alternative definition of power: consider detection prob and cond. power separately
+df_rand_index <- power_new_df %>%
+  group_by(delta,sigma) %>%
+  summarise(avg_ARI = mean(rand_index), 
+            sd_ARI = sd(rand_index)/sqrt(n()),
+            mean_perfect_recovery = mean(rand_index==1),
+            sd_perfect_recovery = 
+              sqrt(mean_perfect_recovery*(1-mean_perfect_recovery)/n()))
+
+p_detect_prob <- df_rand_index %>%
+  ggplot(aes(x=delta,y=mean_perfect_recovery,
+             linetype=as.factor(sigma),
+             group=as.factor(sigma)))+ 
+  geom_point()+
+  geom_pointrange(aes(ymin = mean_perfect_recovery+1.96*sd_perfect_recovery, 
+                      ymax = mean_perfect_recovery-1.96*sd_perfect_recovery))+
+  geom_line()+
+  ylab(TeX('Detection Probability'))+
+  xlab(TeX('Difference in means: $\\delta$'))+
+  theme_bw(base_size=18) + 
+  theme(plot.title = element_text(hjust = 0.5,size=18),
+        legend.position="bottom",
+        legend.title = element_text(size=18),
+        axis.text = element_text(size=18),
+        legend.key.size = unit(2.5, "lines"),
+        legend.text = element_text(size=18,hjust = 0),
+        axis.title=element_text(size=18))+
+  guides(colour = guide_legend(override.aes = list(size=5)))+
+  scale_linetype_discrete(name=TeX('$\\sigma$'))+
+  scale_y_continuous(limits = c(0,1))
+  
+png(paste0(plot_output_dir,'Figure_10_c.png'),
+    width = 7,height = 7, res=300,units='in')
+p_detect_prob
+dev.off()
+
+cond_power_by_cut <- power_new_df %>%
+  filter(effect_size>1e-5) %>%
+  filter(rand_index==1) %>%
+  group_by(delta,p_type,sigma) %>%
+  summarise(mean_power = mean(p_value<=alpha_thresh),
+            sd_power = sqrt(mean_power*(1-mean_power))/n()) %>%
+  ungroup()%>%
+  add_row(delta=0.5,p_type="hyun_power",sigma=1,mean_power=0,sd_power=0) %>%
+  add_row(delta=0.5,p_type="union_power",sigma=1,mean_power=0,sd_power=0) %>%
+  add_row(delta=1,p_type="union_power",sigma=2,mean_power=0,sd_power=0)%>%
+  add_row(delta=1,p_type="hyun_power",sigma=2,mean_power=0,sd_power=0)
 
 
+plot_cond_power <- cond_power_by_cut %>%
+  filter(p_type!="naive_power") %>%
+  ggplot(aes(x=delta,y=mean_power,
+             color=p_type,
+             linetype=as.factor(sigma)))+ 
+  geom_point()+
+  geom_pointrange(aes(ymin = mean_power+1.96*sd_power, ymax = mean_power-1.96*sd_power))+
+  geom_line()+
+  ylab(TeX('Conditional Power at $\\alpha = 0.05$'))+
+  xlab(TeX('Difference in means: $\\delta$'))+
+  theme_bw()+
+  scale_linetype_discrete(name=TeX('$\\sigma$'))+
+  theme(plot.title = element_text(hjust = 0.5,size=15),
+        legend.position="bottom",
+        legend.title = element_text(size=15),
+        axis.text = element_text(size=15),
+        axis.text.x = element_text(size=12),
+        legend.key.size = unit(2.5, "lines"),
+        legend.text = element_text(size=15,hjust = 0),
+        axis.title=element_text(size=15))+
+  scale_color_manual( "Tests", 
+                      values = c(manual_color_pal[1],manual_color_pal[2]),
+                      labels = unname(TeX(c('$p_{Hyun}$',"$p_{C_{1},C_{2}}$"))))
 
+png(paste0(plot_output_dir,'Figure_10_d.png'),
+    width = 7,height = 7, res=300,units='in')
+plot_cond_power
+dev.off()
 
 
