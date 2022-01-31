@@ -8,7 +8,7 @@ input_dir  <- "~/Desktop/dissertation/gflasso_project/GFLassoInference-experimen
 plot_output_dir <- '~/Desktop/dissertation/gflasso_project/GFLassoInference-experiment/plot_output/'
 # load type 1 data
 setwd(input_dir)
-load(file='./Type_1_2D_GFL_stop_criteria_CC_grid_8_level_2_0_sim_times_1000_random_seed_2021.RData')
+load(file='./Type_1_2D_GFL_stop_criteria_K_grid_8_level_2_0_sim_times_1000_random_seed_2021.RData')
 
 df_p0_plot <- data.frame(naive = sort(unlist(lapply(p_val_result,function(x)x[["Naive"]]))),
                          hyun = sort(unlist(lapply(p_val_result,function(x)x[["Hyun"]]))),
@@ -18,7 +18,6 @@ df_p0_plot <- df_p0_plot %>%
   mutate(theoretical = c(1:nrow(df_p0_plot))/nrow(df_p0_plot)) %>%
   pivot_longer(-theoretical, names_to = "p_type", values_to = "p_val") %>%
   mutate(p_type = factor(as.factor(p_type), levels=c("naive","hyun","union")))
-
 
 type_1_2d <- ggplot(data = df_p0_plot) +  
   geom_point(aes(x = theoretical, y=p_val, colour=p_type),size=0.6) +

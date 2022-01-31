@@ -65,6 +65,8 @@ Rscript ./Figure_8.R
 ```
 11. Generate Figure 9
 ```
+Rscript ./Figure_9a_Gen_Data.R
+Rscript ./Figure_9b_Gen_Data.R
 Rscript ./Figure_9.R
 ```
 

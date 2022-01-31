@@ -56,7 +56,7 @@ while(counter_valid<sim_target_times){
                                                          D=Dmat,
                                                          c1=pair_to_test[1], 
                                                          c2=pair_to_test[2],
-                                                         method="K",
+                                                         method=stop_criteria,
                                                          sigma=sigma,
                                                          K=K)
 
