@@ -20,7 +20,7 @@ df_p0_plot <- df_p0_plot %>%
   mutate(theoretical = c(1:nrow(df_p0_plot))/nrow(df_p0_plot)) %>%
   pivot_longer(-theoretical, names_to = "p_type", values_to = "p_val") %>%
   mutate(p_type = factor(as.factor(p_type), levels=c("naive","hyun","union")))
-
+  
 
 type_1 <- ggplot(data = df_p0_plot) +  
   geom_point(aes(x = theoretical, y=p_val, colour=p_type),size=0.6) +

@@ -62,7 +62,7 @@ for (sigma in sigma_seq){
                                                            K=K)
       cat("counter", counter_valid, p_val_segment_cc$Union,"\n")
       p_val_segment_cc$mu_diff <- mu_diff 
-      p_val_segment_cc$ <- current_adj_rand
+      p_val_segment_cc$current_adj_rand <- current_adj_rand
       rand_list[[counter_valid]] <- current_adj_rand
       p_val_result[[counter_valid]] <- p_val_segment_cc
       

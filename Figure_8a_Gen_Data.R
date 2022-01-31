@@ -28,14 +28,6 @@ K <- 2
 # L <- 3
 stop_criteria <- "K"
 
-estimate_sigma <- function(y, cc_y){
-  s <- split(y, cc_y)
-  s_mean <- sapply(s,mean)
-  rss <- sum((unlist(sapply(seq_along(s), function(i) s[[i]]-s_mean[[i]])))^2)
-  s_sigma <- sqrt(rss/(length(y)-length(s)))
-  return(s_sigma)
-}
-
 while(counter_valid < sim_target_times){
   
   # observation from the data generating mechanism
@@ -47,8 +39,6 @@ while(counter_valid < sim_target_times){
   estimated_cp <- match(unique(resulting_cc),resulting_cc)-1
   estimated_cp <- estimated_cp[estimated_cp>0]
   cc_order <- unique(resulting_cc)
-  
-  sigma_hat <- estimate_sigma(y,resulting_cc)
   
   for (i in seq_along(estimated_cp)){
     # ith estimated changepoint
@@ -64,7 +54,9 @@ while(counter_valid < sim_target_times){
                                                          c1=cc_order[i], 
                                                          c2=cc_order[i+1],
                                                          method="K",
-                                                         sigma=sigma_hat,
+                                                         early_stop = max(10*sigma*sqrt(sum(contrast*contrast)),
+                                                          abs(sum(contrast*y))),
+                                                         sigma=sigma,
                                                          K=K)
     
     p_union <- p_val_segment_cc$Union
@@ -78,10 +70,8 @@ while(counter_valid < sim_target_times){
 }
 
 save(p_val_result,
-     file =paste0(output_dir,'estimated_sigma_Type_I_1D_GFL_middle_stop_criteria_',
+     file =paste0(output_dir,'early_stopping_Type_I_1D_GFL_middle_stop_criteria_',
                   stop_criteria,'_grid_',n,'_level_2_',delta,'_sim_times_',
                   counter_valid,'_random_seed_',random_seed,'.RData'))
-
-
 
 
